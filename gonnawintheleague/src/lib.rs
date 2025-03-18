@@ -1,8 +1,14 @@
 //! Library of functions and typedefs to support program arewegonnawintheleague
 
+//use chrono::{Datelike, NaiveDate, Timelike, Utc};
 use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
+//use reqwest::blocking;
+//use scraper::{Html, Selector};
 use std::collections::HashMap;
+use std::fs;
+use std::error::Error;
+
 
 //source for distribution calcuation:
 //    https://fivethirtyeight.com/features/in-126-years-english-football-has-seen-13475-nil-nil-draws/
@@ -10,6 +16,10 @@ use std::collections::HashMap;
 const NUM_POSSIBLE_GOALS: [i32; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
 const HOME_WEIGHTS: [f32; 8] = [18.8, 30.3, 24.8, 14.3, 7.0, 3.1, 1.2, 0.5];
 const AWAY_WEIGHTS: [f32; 8] = [33.8, 36.2, 19.3, 7.4, 2.3, 0.7, 0.2, 0.1];
+//const API_URL: &str = "https://v3.football.api-sports.io/standings";
+//const FIXTURES_URL: &str = "https://www.theguardian.com/football/premierleague/fixtures";
+//const FIXTURES_URL: &str =
+    //"https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures";
 
 // Structures for managing data within simulations
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,6 +84,10 @@ impl LeagueTable {
     pub fn new() -> Self {
         Self::default()
     }
+
+    //    pub fn from() -> Self {
+
+    //   }
 
     pub fn print_table(&self) {
         println!("Rank\tTeam");
@@ -159,6 +173,97 @@ pub fn run_simulation(
     }
 
     simulated_table.find_final_rank(target_team)
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// API interfacing
+
+/*pub fn get_standings(client: &mut Client) {
+    let get_key= env::var("API_SPORTS_KEY");
+    if get_key.is_ok() {
+        let key = get_key.unwrap();
+        let resp = client.get(API_URL).header("x-rapidapi-key", key).query(&[("league", "39"), ("season", "2024"),]).send();
+        if resp.is_ok() {
+            let results = resp.unwrap();
+            print!("results: {:?}", results);
+        }
+    }
+}
+    */
+
+// web scraping
+/*
+
+pub fn scraper_test() {
+    let response = reqwest::blocking::get(FIXTURES_URL);
+    let html_content = response.unwrap().text().unwrap();
+    let parsed = Html::parse_document(&html_content);
+    let now = Utc::now().date_naive();
+    let date_selector = Selector::parse(r#"td[data-stat="date"]"#).unwrap();
+    for element in parsed.select(&date_selector).by_ref() {
+        let date_result =
+            NaiveDate::parse_from_str(&element.text().collect::<String>(), "%Y-%m-%d");
+        match date_result {
+            Ok(date) => {
+                if date > now {
+                    println!("date: {:?}", date);
+                }
+            }
+            Err(_e) => (),
+        }
+    }
+}
+
+pub fn scrape_fixtures(match_list: &mut Vec<Match>) {
+    let now = Utc::now().date_naive();
+    let response = reqwest::blocking::get(FIXTURES_URL);
+    let html_content = response.unwrap().text().unwrap();
+    let parsed = Html::parse_document(&html_content);
+    let selector = Selector::parse("tr").unwrap();
+    let date_selector = Selector::parse(r#"td[data-stat="date"]"#).unwrap();
+    let home_team_selector = Selector::parse(r#"td[data-stat="home_team"]"#).unwrap();
+    let away_team_selector = Selector::parse(r#"td[data-stat="away_team"]"#).unwrap();
+    let mut skip = false;
+    for element in parsed.select(&selector) {
+        if skip == false {
+            for sub_element in element.select(&date_selector).by_ref() {
+                let date_result =
+                    NaiveDate::parse_from_str(&sub_element.text().collect::<String>(), "%Y-%m-%d");
+                match date_result {
+                    Ok(date) => {
+                        if date > now {
+                            //println!("element: {:?}", element);
+                            //println!("sub_element: {:?}", sub_element);
+                            skip = true;
+                            break;
+                        }
+                    }
+                    Err(_e) => (),
+                }
+            }
+        }
+        for sub_element in element.select(&home_team_selector).by_ref() {
+            //check if it exists
+            println!("home team: {:?}", sub_element.text().collect::<String>());
+        }
+    }
+}
+    */
+
+
+// read in data from files
+
+pub fn read_fixtures() -> Result<(), Box<dyn Error>> {
+    let fixtures = fs::read_to_string("files/fixtures_list.json")?;
+    println!("{fixtures:?}");
+    Ok(())
+}
+
+
+pub fn read_standings() -> Result<(), Box<dyn Error>> {
+    let standings = fs::read_to_string("files/standings.json")?;
+    println!("{standings:?}");
+    Ok(())
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -282,13 +387,39 @@ mod tests {
         ];
 
         let target = "Arsenal".to_string();
-        let mut count= 0.0;
+        let mut count = 0.0;
         for _x in 1..50 {
-            if run_simulation(&target, &mut league_table, &mut matches) <= 2 {
+            if run_simulation(&target, &mut league_table, &mut matches) <= 1 {
                 count += 1.0;
             }
         }
 
         println!("{} {}%", target, count / 50.0 * 100.0);
     }
+
+    /*     #[test]
+    fn api_test() {
+        let mut client = Client::new();
+        get_standings(&mut client);
+    }
+    */
+   /* #[test]
+    fn scraping_test() {
+        let mut fixtures = Vec::<Match>::new();
+        //scrape_fixtures(&mut fixtures);
+        //scraper_test();
+    }
+    */
+
+    #[test]
+    fn read_in_table() {
+        read_standings();
+    }
+
+    #[test]
+    fn read_in_fixture_list() {
+        read_fixtures();
+    }
+
+
 }
