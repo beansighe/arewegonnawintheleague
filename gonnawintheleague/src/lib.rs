@@ -17,8 +17,8 @@ use std::io::BufReader;
 const NUM_POSSIBLE_GOALS: [i32; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
 const HOME_WEIGHTS: [f32; 8] = [18.8, 30.3, 24.8, 14.3, 7.0, 3.1, 1.2, 0.5];
 const AWAY_WEIGHTS: [f32; 8] = [33.8, 36.2, 19.3, 7.4, 2.3, 0.7, 0.2, 0.1];
-const FIXTURES_PATH: &str = "/files/fixtures_list.json";
-const STANDINGS_PATH: &str = "/files/standings.json";
+const FIXTURES_PATH: &str = "/data/fixtures_list.json";
+const STANDINGS_PATH: &str = "/data/standings.json";
 
 // Structures for managing data within simulations
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
