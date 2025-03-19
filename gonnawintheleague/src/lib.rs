@@ -1,6 +1,5 @@
 //! Library of functions and typedefs to support program arewegonnawintheleague
 
-//use chrono::{Datelike, NaiveDate, Timelike, Utc};
 use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -340,5 +339,22 @@ mod tests {
         let mut fixtures_list = Vec::<Match>::new();
         read_fixtures(&mut fixtures_list);
         println!("Fixtures\n{fixtures_list:?}");
+    }
+
+    #[test]
+    fn full_threadless_sim_test() {
+        let mut fixtures = Vec::<Match>::new();
+        let mut current_table = LeagueTable::new();
+        read_standings(&mut current_table);
+        read_fixtures(&mut fixtures);
+        let target_team = "Brighton".to_string();
+        let rank = 8;
+        let mut count = 0.0;
+        for _i in 1..50 {
+            if run_simulation(&target_team, &mut current_table, &mut fixtures) <= rank {
+                count += 1.0;
+            }
+        }
+        println!("Percent chance {} finishes at or above rank {}: {}%", target_team, rank, count / 50.0 * 100.0);
     }
 }
