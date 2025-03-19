@@ -2,13 +2,14 @@
 
 use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
+use relative_path::RelativePath;
 use serde::{Deserialize, Serialize};
 use serde_json::{Result, Value};
+use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::env::current_dir;
 use std::fs::File;
 use std::io::BufReader;
-use std::env::current_dir;
-use relative_path::RelativePath;
 
 //source for weights calcuation for use as distribution model in Monte Carlo simulation:
 //    https://fivethirtyeight.com/features/in-126-years-english-football-has-seen-13475-nil-nil-draws/
@@ -41,10 +42,10 @@ impl Team {
 
     pub fn update(&mut self, match_goal_diff: i32) {
         self.goal_diff += match_goal_diff;
-        if match_goal_diff == 0 {
-            self.pts += 1;
-        } else if match_goal_diff > 0 {
-            self.pts += 3;
+        match match_goal_diff.cmp(&0) {
+            Ordering::Equal => self.pts += 1,
+            Ordering::Greater => self.pts += 3,
+            Ordering::Less => (),
         }
     }
 }
@@ -53,8 +54,6 @@ impl Team {
 pub struct Match {
     home: String,
     away: String,
-    home_goals: i32,
-    away_goals: i32,
 }
 
 impl Match {
@@ -66,8 +65,6 @@ impl Match {
         Self {
             home: home.to_string(),
             away: away.to_string(),
-            home_goals: 0,
-            away_goals: 0,
         }
     }
 }
@@ -90,7 +87,10 @@ impl LeagueTable {
                 .then_with(|| y.goal_diff.cmp(&x.goal_diff))
         });
         for team in print_vector {
-            println!("{}\t{:<10}\t\t{:>5}\t{:>3}", i, team.name, team.pts, team.goal_diff);
+            println!(
+                "{}\t{:<10}\t\t{:>5}\t{:>3}",
+                i, team.name, team.pts, team.goal_diff
+            );
             i += 1;
         }
     }
@@ -105,8 +105,8 @@ impl LeagueTable {
         self.0.entry(name.clone()).insert_entry(team);
     }
 
-    pub fn update(&mut self, latest_match: &Match) {
-        let goal_diff = latest_match.home_goals - latest_match.away_goals;
+    pub fn update(&mut self, latest_match: &Match, home_goals: i32, away_goals: i32) {
+        let goal_diff = home_goals - away_goals;
         self.0
             .get_mut(&latest_match.home)
             .unwrap()
@@ -142,19 +142,19 @@ impl LeagueTable {
 // Structures for simulation running and data tracking
 
 pub fn run_simulation(
-    target_team: &String,
-    current_table: &mut LeagueTable,
-    match_list: &mut Vec<Match>,
+    target_team: &str,
+    current_table: &LeagueTable,
+    match_list: &Vec<Match>,
 ) -> i32 {
     let mut simulated_table = current_table.clone();
-    let home_dist = WeightedIndex::new(&HOME_WEIGHTS).unwrap();
-    let away_dist = WeightedIndex::new(&AWAY_WEIGHTS).unwrap();
+    let home_dist = WeightedIndex::new(HOME_WEIGHTS).unwrap();
+    let away_dist = WeightedIndex::new(AWAY_WEIGHTS).unwrap();
     let mut rng = rand::rng();
 
     for game in match_list {
-        game.home_goals = NUM_POSSIBLE_GOALS[home_dist.sample(&mut rng)];
-        game.away_goals = NUM_POSSIBLE_GOALS[away_dist.sample(&mut rng)];
-        simulated_table.update(game);
+        let home_goals = NUM_POSSIBLE_GOALS[home_dist.sample(&mut rng)];
+        let away_goals = NUM_POSSIBLE_GOALS[away_dist.sample(&mut rng)];
+        simulated_table.update(game, home_goals, away_goals);
     }
 
     simulated_table.find_final_rank(target_team)
@@ -164,8 +164,9 @@ pub fn run_simulation(
 // read in data from files
 
 pub fn read_fixtures(fixture_list: &mut Vec<Match>) {
-    let root_dir = current_dir().expect("should only be run in valid directory with appropriate permissions");
-    let fixtures_relative= RelativePath::new(FIXTURES_PATH);
+    let root_dir =
+        current_dir().expect("should only be run in valid directory with appropriate permissions");
+    let fixtures_relative = RelativePath::new(FIXTURES_PATH);
     let fixtures_full_path = fixtures_relative.to_path(&root_dir);
     println!("fixtures path: {fixtures_full_path:?}");
     let file = File::open(fixtures_full_path).expect("file should open if path constant valid");
@@ -178,23 +179,28 @@ pub fn read_fixtures(fixture_list: &mut Vec<Match>) {
                 match catch {
                     None => break,
                     Some(entry) => {
-                        fixture_list.push(Match::from(entry["home"].as_str().unwrap(), entry["away"].as_str().unwrap()));
+                        fixture_list.push(Match::from(
+                            entry["home"].as_str().unwrap(),
+                            entry["away"].as_str().unwrap(),
+                        ));
                     }
                 }
             }
-        },
+        }
         Err(error) => println!("error reading file: {error:?}"),
     }
 }
 
 pub fn read_standings(current_table: &mut LeagueTable) {
-    let root_dir = current_dir().expect("should only be run in valid directory with appropriate permissions");
-    let standings_relative= RelativePath::new(STANDINGS_PATH);
+    let root_dir =
+        current_dir().expect("should only be run in valid directory with appropriate permissions");
+    let standings_relative = RelativePath::new(STANDINGS_PATH);
     let standings_full_path = standings_relative.to_path(&root_dir);
     println!("standings full path: {standings_full_path:?}");
     let file = File::open(standings_full_path).expect("file should open if path constant valid");
     let reader = BufReader::new(file);
-    let standings_data: [Team; 20] = serde_json::from_reader(reader).expect("data should be correctly formatted");
+    let standings_data: [Team; 20] =
+        serde_json::from_reader(reader).expect("data should be correctly formatted");
     for team in standings_data {
         current_table.add_team_struct(team.name.to_string(), team.clone());
     }
@@ -250,33 +256,29 @@ mod tests {
         let new_match = Match {
             home: "Liverpool".to_string(),
             away: "Arsenal".to_string(),
-            home_goals: 2,
-            away_goals: 0,
         };
         let mut league_table = LeagueTable::new();
         league_table.add_team("Liverpool".to_string(), 67, 40);
         league_table.add_team("Arsenal".to_string(), 27, 26);
-        league_table.update(&new_match);
+        league_table.update(&new_match, 2, 0);
 
         assert_eq!(70, league_table.0.get("Liverpool").unwrap().pts);
         assert_eq!(42, league_table.0.get("Liverpool").unwrap().goal_diff);
 
         assert_eq!(27, league_table.0.get("Arsenal").unwrap().pts);
-        assert_eq!(26, league_table.0.get("Arsenal").unwrap().goal_diff);
+        assert_eq!(24, league_table.0.get("Arsenal").unwrap().goal_diff);
 
         let second_match = Match {
             home: "Liverpool".to_string(),
             away: "Arsenal".to_string(),
-            home_goals: 2,
-            away_goals: 2,
         };
-        league_table.update(&second_match);
+        league_table.update(&second_match, 2, 2);
 
         assert_eq!(71, league_table.0.get("Liverpool").unwrap().pts);
         assert_eq!(42, league_table.0.get("Liverpool").unwrap().goal_diff);
 
         assert_eq!(28, league_table.0.get("Arsenal").unwrap().pts);
-        assert_eq!(26, league_table.0.get("Arsenal").unwrap().goal_diff);
+        assert_eq!(24, league_table.0.get("Arsenal").unwrap().goal_diff);
     }
 
     #[test]
@@ -326,7 +328,6 @@ mod tests {
         println!("{} {}%", target, count / 50.0 * 100.0);
     }
 
-
     #[test]
     fn read_in_table() {
         let mut new_league_table = LeagueTable::new();
@@ -348,13 +349,18 @@ mod tests {
         read_standings(&mut current_table);
         read_fixtures(&mut fixtures);
         let target_team = "Brighton".to_string();
-        let rank = 8;
+        let rank = 7;
         let mut count = 0.0;
         for _i in 1..50 {
             if run_simulation(&target_team, &mut current_table, &mut fixtures) <= rank {
                 count += 1.0;
             }
         }
-        println!("Percent chance {} finishes at or above rank {}: {}%", target_team, rank, count / 50.0 * 100.0);
+        println!(
+            "Percent chance {} finishes at or above rank {}: {}%",
+            target_team,
+            rank,
+            count / 50.0 * 100.0
+        );
     }
 }
