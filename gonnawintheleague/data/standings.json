@@ -1,102 +1,122 @@
 [
-    {
-        "name": "Liverpool",
-        "pts": 70,
-        "goal_diff": 42
-    },
-    {
-        "name": "Arsenal",
-        "pts": 58,
-        "goal_diff": 29
-    },
-    {
-        "name": "Forest",
-        "pts": 54,
-        "goal_diff": 14
-    },
-    {
-        "name": "Chelsea",
-        "pts": 49,
-        "goal_diff": 16
-    },
-    {
-        "name": "City",
-        "pts": 48,
-        "goal_diff": 15
-    },
-    {
-        "name": "Newcastle",
-        "pts": 47,
-        "goal_diff": 9
-    },
-    {
-        "name": "Brighton",
-        "pts": 47,
-        "goal_diff": 6
-    },
-    {
-        "name": "Fulham",
-        "pts": 45,
-        "goal_diff": 5
-    },
-    {
-        "name": "Villa",
-        "pts": 45,
-        "goal_diff": -4
-    },
-    {
-        "name": "Bournemouth",
-        "pts": 44,
-        "goal_diff": 12
-    },
-    {
-        "name": "Brentford",
-        "pts": 41,
-        "goal_diff": 5
-    },
-    {
-        "name": "Palace",
-        "pts": 39,
-        "goal_diff": 3
-    },
-    {
-        "name": "United",
-        "pts": 37,
-        "goal_diff": -3
-    },
-    {
-        "name": "Spurs",
-        "pts": 34,
-        "goal_diff": 12
-    },
-    {
-        "name": "Everton",
-        "pts": 34,
-        "goal_diff": -4
-    },
-    {
-        "name": "West Ham",
-        "pts": 34,
-        "goal_diff": -15
-    },
-    {
-        "name": "Wolves",
-        "pts": 25,
-        "goal_diff": -18
-    },
-    {
-        "name": "Ipswich",
-        "pts": 17,
-        "goal_diff": -34
-    },
-    {
-        "name": "Leicester",
-        "pts": 17,
-        "goal_diff": -40
-    },
-    {
-        "name": "Southampton",
-        "pts": 9,
-        "goal_diff": -49
-    }
+  {
+    "name": "Liverpool",
+    "pts": 70,
+    "goal_diff": 42,
+    "wins": 0
+  },
+  {
+    "name": "Arsenal",
+    "pts": 58,
+    "goal_diff": 29,
+    "wins": 0
+  },
+  {
+    "name": "Forest",
+    "pts": 54,
+    "goal_diff": 14,
+    "wins": 0
+  },
+  {
+    "name": "Chelsea",
+    "pts": 49,
+    "goal_diff": 16,
+    "wins": 0
+  },
+  {
+    "name": "City",
+    "pts": 48,
+    "goal_diff": 15,
+    "wins": 0
+  },
+  {
+    "name": "Newcastle",
+    "pts": 47,
+    "goal_diff": 9,
+    "wins": 0
+  },
+  {
+    "name": "Brighton",
+    "pts": 47,
+    "goal_diff": 6,
+    "wins": 0
+  },
+  {
+    "name": "Fulham",
+    "pts": 45,
+    "goal_diff": 5,
+    "wins": 0
+  },
+  {
+    "name": "Villa",
+    "pts": 45,
+    "goal_diff": -4,
+    "wins": 0
+  },
+  {
+    "name": "Bournemouth",
+    "pts": 44,
+    "goal_diff": 12,
+    "wins": 0
+  },
+  {
+    "name": "Brentford",
+    "pts": 41,
+    "goal_diff": 5,
+    "wins": 0
+  },
+  {
+    "name": "Palace",
+    "pts": 39,
+    "goal_diff": 3,
+    "wins": 0
+  },
+  {
+    "name": "United",
+    "pts": 37,
+    "goal_diff": -3,
+    "wins": 0
+  },
+  {
+    "name": "Spurs",
+    "pts": 34,
+    "goal_diff": 12,
+    "wins": 0
+  },
+  {
+    "name": "Everton",
+    "pts": 34,
+    "goal_diff": -4,
+    "wins": 0
+  },
+  {
+    "name": "West Ham",
+    "pts": 34,
+    "goal_diff": -15,
+    "wins": 0
+  },
+  {
+    "name": "Wolves",
+    "pts": 25,
+    "goal_diff": -18,
+    "wins": 0
+  },
+  {
+    "name": "Ipswich",
+    "pts": 17,
+    "goal_diff": -34,
+    "wins": 0
+  },
+  {
+    "name": "Leicester",
+    "pts": 17,
+    "goal_diff": -40,
+    "wins": 0
+  },
+  {
+    "name": "Southampton",
+    "pts": 9,
+    "goal_diff": -49,
+    "wins": 0
+  }
 ]

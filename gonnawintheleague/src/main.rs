@@ -16,7 +16,7 @@ struct AppStateWithData {
 #[derive(Template)]
 #[template(path = "index.html")]
 struct IndexTemplate<'a> {
-    results: Option<&'a (i32, f32, String)>,
+    results: Option<&'a (i32, (f32, i32), String)>,
 }
 
 #[derive(Deserialize)]
@@ -54,33 +54,63 @@ pub fn calculate_results(
     target_rank: i32,
     standings: &league::LeagueTable,
     fixtures: &Vec<league::Match>,
-) -> f32 {
+) -> (f32, i32) {
     // running tally instantiated as Arc holding Mutex to allow all threads to modify
     let final_count = Arc::new(Mutex::new(0));
+    //let min_wins = Arc::new(Mutex::new(0));
+    let total_wins = Arc::new(Mutex::new(0));
+    //let target_count = Arc::new(Mutex::new(0));
 
     // spawn threads
     thread::scope(|s| {
         for _i in 0..NUM_THREADS {
             s.spawn(|| {
                 let mut count = 0;
+                //let mut curr_min = 38;
+                let mut thread_wins = 0;
+                //let mut target_count_thread = 0;
                 for _j in 0..NUM_SIMULATIONS {
                     // if the target team achieves the target rank or better, add to the success tally
-                    if league::run_simulation(target_team, standings, fixtures) <= target_rank {
+                    let (rank, wins) = league::run_simulation(target_team, standings, fixtures);
+                    if rank <= target_rank {
                         count += 1;
+                        thread_wins += wins;
+                        //target_count_thread += 1;
                     }
+                    /*if wins < curr_min {
+                        curr_min = wins;
+                    }
+                    */
+                    // }
                 }
                 // access mutex to add this threads' count to the running total
                 let mut final_count = final_count.lock().unwrap();
                 *final_count += count;
+                //let mut min_wins = min_wins.lock().unwrap();
+                //*min_wins = curr_min;
+                let mut total_wins = total_wins.lock().unwrap();
+                *total_wins += thread_wins;
+                //let mut target_count = target_count.lock().unwrap();
+                //*target_count += target_count_thread;
             });
         }
     });
 
     // access final count mutex
-    let useable_count = final_count.lock().unwrap();
+    let final_count = final_count.lock().unwrap();
+    //let min_wins = min_wins.lock().unwrap();
+    let total_wins = total_wins.lock().unwrap();
+    //let target_count = target_count.lock().unwrap();
 
     // calculate probability of success as total successes over total number of simulations * 100 to report as percent
-    *useable_count as f32 / (NUM_SIMULATIONS as f32 * NUM_THREADS as f32) * 100.0
+    if *final_count > 0 {
+        (
+            *final_count as f32 / (NUM_SIMULATIONS as f32 * NUM_THREADS as f32) * 100.0,
+            *total_wins / *final_count,
+        )
+    } else {
+        (0.0, 0)
+    }
 }
 
 #[actix_web::main]

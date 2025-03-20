@@ -29,14 +29,17 @@ pub struct Team {
     name: String,
     pts: u32,
     goal_diff: i32,
+    wins: i32,
 }
 
 impl Team {
     pub fn new(name: String, pts: u32, goal_diff: i32) -> Self {
+        let wins = 0;
         Self {
             name,
             pts,
             goal_diff,
+            wins,
         }
     }
 
@@ -44,7 +47,10 @@ impl Team {
         self.goal_diff += match_goal_diff;
         match match_goal_diff.cmp(&0) {
             Ordering::Equal => self.pts += 1,
-            Ordering::Greater => self.pts += 3,
+            Ordering::Greater => {
+                self.pts += 3;
+                self.wins += 1;
+            }
             Ordering::Less => (),
         }
     }
@@ -118,8 +124,9 @@ impl LeagueTable {
     }
 
     // could we do this more efficiently?
-    pub fn find_final_rank(&mut self, desired_team: &str) -> i32 {
+    pub fn find_final_rank_and_wins(&mut self, desired_team: &str) -> (i32, i32) {
         let mut i = 1;
+        let mut wins = 0;
         let mut ordered_vector: Vec<&Team> = self.0.values().collect();
         ordered_vector.sort_by(|x, y| {
             y.pts
@@ -132,9 +139,10 @@ impl LeagueTable {
             } else {
                 i += 1;
             }
+            wins = team.wins;
         }
 
-        i
+        (i, wins)
     }
 }
 
@@ -145,7 +153,7 @@ pub fn run_simulation(
     target_team: &str,
     current_table: &LeagueTable,
     match_list: &Vec<Match>,
-) -> i32 {
+) -> (i32, i32) {
     let mut simulated_table = current_table.clone();
     let home_dist = WeightedIndex::new(HOME_WEIGHTS).unwrap();
     let away_dist = WeightedIndex::new(AWAY_WEIGHTS).unwrap();
@@ -157,7 +165,7 @@ pub fn run_simulation(
         simulated_table.update(game, home_goals, away_goals);
     }
 
-    simulated_table.find_final_rank(target_team)
+    simulated_table.find_final_rank_and_wins(target_team)
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -287,11 +295,11 @@ mod tests {
         league_table.add_team("Liverpool".to_string(), 67, 40);
         league_table.add_team("Arsenal".to_string(), 54, 28);
 
-        let liverpool_rank = league_table.find_final_rank("Liverpool");
-        let arsenal_rank = league_table.find_final_rank("Arsenal");
+        let liverpool_rank = league_table.find_final_rank_and_wins("Liverpool");
+        let arsenal_rank = league_table.find_final_rank_and_wins("Arsenal");
 
-        assert_eq!(1, liverpool_rank);
-        assert_eq!(2, arsenal_rank);
+        assert_eq!((1, 0), liverpool_rank);
+        assert_eq!((2, 0), arsenal_rank);
     }
 
     #[test]
@@ -320,7 +328,7 @@ mod tests {
         let target = "Arsenal".to_string();
         let mut count = 0.0;
         for _x in 1..50 {
-            if run_simulation(&target, &mut league_table, &mut matches) <= 1 {
+            if run_simulation(&target, &mut league_table, &mut matches).0 <= 1 {
                 count += 1.0;
             }
         }
@@ -349,18 +357,27 @@ mod tests {
         read_standings(&mut current_table);
         read_fixtures(&mut fixtures);
         let target_team = "Brighton".to_string();
-        let rank = 7;
-        let mut count = 0.0;
+        let rank = 4;
+        let mut count = 0;
+        let mut win_total = 0;
+        let mut target_count = 0;
         for _i in 1..50 {
-            if run_simulation(&target_team, &mut current_table, &mut fixtures) <= rank {
-                count += 1.0;
+            let (final_rank, num_wins) =
+                run_simulation(&target_team, &mut current_table, &mut fixtures);
+            if final_rank <= rank {
+                count += 1;
+                if final_rank == rank {
+                    win_total += num_wins;
+                    target_count += 1;
+                }
             }
         }
         println!(
-            "Percent chance {} finishes at or above rank {}: {}%",
+            "Percent chance {} finishes at or above rank {}: {}%. Average number of wins required: {}",
             target_team,
             rank,
-            count / 50.0 * 100.0
+            count as f32 / 50.0 * 100.0,
+            win_total / target_count
         );
     }
 }
