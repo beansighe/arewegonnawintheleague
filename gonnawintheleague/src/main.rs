@@ -1,57 +1,64 @@
 use gonnawintheleague as league;
-use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use actix_web::{web, App, HttpServer, Responder, HttpResponse};
+use askama::Template;
+use serde::Deserialize;
 
 //cast using as f32 to use as divisor
 const NUM_SIMULATIONS: i32 = 4000;
 const NUM_THREADS: u32 = 4;
 
-fn main() {
+#[derive(Template)]
+#[template(path = "index.html")]
+struct IndexTemplate<'a> {
+    results: Option<&'a (i32, f32, String)>,
+}
+
+#[derive(Deserialize)]
+struct FormData {
+    team: String,
+    rank: i32,
+}
+
+async fn index() -> impl Responder {
+    let blank_template = IndexTemplate { results: None};
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(blank_template.render().unwrap())
+
+}
+
+async fn submit(form: web::Form<FormData>) -> impl Responder {
+    let team = form.team.clone();
+    let rank = form.rank;
+    let computed_results = (rank, 49.8, team);
+    let results_template = IndexTemplate { results: Some(&computed_results) };
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(results_template.render().unwrap())
+}
+
+
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    HttpServer::new(|| {
+        App::new()
+        .route("/", web::get().to(index))
+        .route("/submit", web::post().to(submit))
+    })
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
+    
     // STEPS
     // read in target team, target rank
-    fn read_from_user() -> (String, i32) {
-        let mut user_team = String::new();
-        let mut user_rank_input = String::new();
-        let mut user_rank = 0;
-
-        //read in target team name from user input
-        print!("Desired team name: ");
-        let _ = std::io::stdout().flush();
-        match std::io::stdin().read_line(&mut user_team) {
-            Ok(_len) => (),
-            Err(error) => println!("error reading input: {error:?}"),
-        }
-
-        // trim off newline
-        match user_team.pop() {
-            Some(_char) => (),
-            None => println!("please provide valid team name"),
-        }
-
-        //read in target rank from user input
-        print!("Desired rank: ");
-        let _ = std::io::stdout().flush();
-        match std::io::stdin().read_line(&mut user_rank_input) {
-            Ok(_len) => (),
-            Err(error) => println!("error reading input: {error:?}"),
-        }
-        //convert rank input to int
-        if user_rank_input.is_ascii() {
-            match user_rank_input.trim().parse::<i32>() {
-                Ok(integer) => user_rank = integer,
-                Err(error) => println!("input could not be parsed as int: {error:?}"),
-            }
-        }
-
-        (user_team, user_rank)
-    }
 
     // hardcoded team and rank for testing
-    //let target_team = "Brighton";
-    //let target_rank = 7;
+    /*let target_team = "Brighton";
+    let target_rank = 7;
 
-    let (target_team, target_rank) = read_from_user();
 
     // read in data
     let mut fixture_list = Vec::<league::Match>::new();
@@ -92,4 +99,5 @@ fn main() {
         "Percent chance {} achieves rank {} or better: {}%",
         target_team, target_rank, outcome
     );
+    */
 }
