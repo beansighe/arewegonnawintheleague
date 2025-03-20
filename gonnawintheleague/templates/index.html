@@ -1,24 +1,28 @@
 <!DOCTYPE html>
-<html>
-  <title>Are We Gonna Win the League?</title>
-  <link rel="stylesheet" type="text/css" href="/static/style.css" />
-  <div class="page">
-    <h2>Oo are ya!</h2>
-    <form action="/submit" method="post">
-      <p class="heading">
-        Who do you support?: <input type="text" name="team" />
-      </p>
-      <p class="heading">
-        Where do you want to finish?: <input type="number" name="rank" />
-        <input type="submit" name="submit" value="Submit" />
-      </p>
-    </form>
+<html lang="en">
+  <head>
+    <title>Are We Gonna Win the League?</title>
+    <link rel="stylesheet" href="/_static/style.css" />
+  </head>
+  <body>
+    <div class="page">
+      <h2>Oo are ya!</h2>
+      <form action="/submit" method="post">
+        <p class="heading">
+          Who do you support?: <input type="text" name="team" />
+        </p>
+        <p class="heading">
+          Where do you want to finish?: <input type="number" name="rank" />
+          <input type="submit" name="submit" value="Submit" />
+        </p>
+      </form>
 
-    {% if results.is_some() %} {% let results_tuple = results.unwrap() %}
-    <h2>
-      There is a {{ results_tuple.1 }}% chance that {{ results_tuple.2 }} will
-      finish in rank {{ results_tuple.0 }} or above
-    </h2>
-    {% endif %}
-  </div>
+      {% if results.is_some() %} {% let results_tuple = results.unwrap() %}
+      <h2>
+        There is a {{ results_tuple.1 }}% chance that {{ results_tuple.2 }} will
+        finish in rank {{ results_tuple.0 }} or above
+      </h2>
+      {% endif %}
+    </div>
+  </body>
 </html>
