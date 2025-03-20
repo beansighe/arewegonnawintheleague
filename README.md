@@ -9,6 +9,8 @@ by simulating the remainder of the season using a Monte Carlo simulation.
 
 Once built, the app is setup to be hosted locally, with the dream to eventually have an externally accessible site with up-to-date data.
 
+Once cloned, cd into subdirectory gonnawintheleague before running "cargo run"
+
 ## Process
 The simplest aspects of the program, as it turned out, were building out the library of functions needed to run the simulation and implementing the threads. Modifying the program into a web app was more complex than I imagined, but quite a lot of fun. I can't seem to get the interface to acknowledge and employ my stylesheet, but that is of little importance.
 
