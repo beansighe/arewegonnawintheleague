@@ -10,17 +10,18 @@
       <p>
         Want to know if your team has a shot of winning the league? Qualifying
         for European play? Avoiding relegation? Enter your team's name and the
-        rank you hope they'll achieve below to see just how tough their odds
-        really are.
+        rank you hope they'll achieve below to see just how tough -- or not --
+        their odds really are.
       </p>
-      <h2>Oo are ya!</h2>
+      <h2>Who are ya?!</h2>
       <form action="/submit" method="post">
         <p class="heading">
           Who do you support?: <input type="text" name="team" />
         </p>
         <p class="heading">
-          Where do you want to finish?: <input type="number" name="rank" />
-          <input type="submit" name="submit" value="Submit" />
+          Where do you want to finish?:
+          <input type="number" name="rank" min="1" max="20" />
+          <input type="submit" name="submit" value="Can we do it?" />
         </p>
       </form>
 
@@ -30,6 +31,30 @@
         finish in rank {{ results_tuple.0 }} or above
       </h2>
       {% endif %}
+
+      <h3>Valid Team Name Formats</h3>
+      <ul>
+        <li>Arsenal</li>
+        <li>Villa</li>
+        <li>Bournemouth</li>
+        <li>Brentford</li>
+        <li>Brighton</li>
+        <li>Chelsea</li>
+        <li>Palace</li>
+        <li>Everton</li>
+        <li>Fulham</li>
+        <li>Ipswich</li>
+        <li>Leicester</li>
+        <li>Liverpool</li>
+        <li>City</li>
+        <li>United</li>
+        <li>Newcastle</li>
+        <li>Forest</li>
+        <li>Southampton</li>
+        <li>Spurs</li>
+        <li>West Ham</li>
+        <li>Wolves</li>
+      </ul>
     </div>
   </body>
 </html>
