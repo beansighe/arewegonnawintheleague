@@ -1,3 +1,10 @@
+//! This is a web app which attempts to provide the user with a
+//! measure by which to gauge the potential outcome of the season
+//! of a specific Premier League team by calculating a percent chance
+//! of achieving a specific rank of better by the end of the season
+//! given current standings and the remaining fixtures using a
+//! Monte Carlo simulation.
+
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use askama::Template;
 use gonnawintheleague as league;
@@ -5,10 +12,15 @@ use serde::Deserialize;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-//cast using as f32 to use as divisor
 const NUM_SIMULATIONS: i32 = 4000;
 const NUM_THREADS: u32 = 4;
 
+/// This structure holds the current data
+/// which will serve as the starting point
+/// and the basis for the Monte Carlo simulation.
+///
+/// Treating it as app state data allows us
+/// to only read the data and construct the structures once
 struct AppStateWithData {
     standings: league::LeagueTable,
     fixtures: Vec<league::Match>,
@@ -25,6 +37,7 @@ struct FormData {
     rank: i32,
 }
 
+/// implements the landing page before any calculations have been done
 async fn index() -> impl Responder {
     let blank_template = IndexTemplate { results: None };
     HttpResponse::Ok()
@@ -32,6 +45,7 @@ async fn index() -> impl Responder {
         .body(blank_template.render().unwrap())
 }
 
+/// handles form processing, capturing and displaying of results
 async fn submit(form: web::Form<FormData>, data: web::Data<AppStateWithData>) -> impl Responder {
     let team = form.team.clone();
     let rank = form.rank;

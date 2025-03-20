@@ -1,4 +1,9 @@
-//! Library of functions and typedefs to support program arewegonnawintheleague
+//! Library of functions and typedefs to support program arewegonnawintheleague.
+//! 
+//! This library contains structures and supports for managing standings and
+//! match data for starting input and simulation results, running simulations,
+//! and reading data in from json files (in place of API calls, for now)
+//! 
 
 use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
@@ -11,8 +16,6 @@ use std::env::current_dir;
 use std::fs::File;
 use std::io::BufReader;
 
-//source for weights calcuation for use as distribution model in Monte Carlo simulation:
-//    https://fivethirtyeight.com/features/in-126-years-english-football-has-seen-13475-nil-nil-draws/
 
 const NUM_POSSIBLE_GOALS: [i32; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
 const HOME_WEIGHTS: [f32; 8] = [18.8, 30.3, 24.8, 14.3, 7.0, 3.1, 1.2, 0.5];
@@ -22,8 +25,8 @@ const STANDINGS_PATH: &str = "/data/standings.json";
 
 // Structures for managing data within simulations
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// struct to store individual team data
-// held within the league table structure
+
+/// Stores individual team data to be held within the league table structure
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Team {
     name: String,
@@ -32,6 +35,7 @@ pub struct Team {
 }
 
 impl Team {
+    /// Create a new team based on raw data
     pub fn new(name: String, pts: u32, goal_diff: i32) -> Self {
         Self {
             name,
@@ -40,6 +44,9 @@ impl Team {
         }
     }
 
+    /// Updates pts based on passed match outcome data
+    /// to reflect effect of simulated match on team's
+    /// table standing
     pub fn update(&mut self, match_goal_diff: i32) {
         self.goal_diff += match_goal_diff;
         match match_goal_diff.cmp(&0) {
@@ -50,6 +57,12 @@ impl Team {
     }
 }
 
+/// Stores match data to be used in simulation
+/// 
+/// Home and away affects the distribution used in
+/// simulating the scores as well as how the match goal
+/// differential is passed to the corresponding Team's
+/// update function
 #[derive(Debug, Default, Clone)]
 pub struct Match {
     home: String,
@@ -57,10 +70,12 @@ pub struct Match {
 }
 
 impl Match {
+    /// create an empty Match
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// create a Match using provided data
     pub fn from(home: &str, away: &str) -> Self {
         Self {
             home: home.to_string(),
@@ -69,14 +84,20 @@ impl Match {
     }
 }
 
+/// Structure for storing current standings as well as 
+/// standings generated through a simulation
 #[derive(Debug, Default, Clone)]
 pub struct LeagueTable(HashMap<String, Team>);
 
 impl LeagueTable {
+    /// create an empty LeagueTable
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Function to print an ordered league table to stdout
+    /// 
+    /// Used in unit testing
     pub fn print_table(&self) {
         println!("Rank\tTeam\t\t\tPoints\t GD");
         let mut i = 1;
@@ -95,16 +116,23 @@ impl LeagueTable {
         }
     }
 
+    /// Function to add to the table using raw data
     pub fn add_team(&mut self, name: String, pts: u32, goals_diff: i32) {
         self.0
             .entry(name.clone())
             .insert_entry(Team::new(name.clone(), pts, goals_diff));
     }
 
+    /// Function to add to the table using an externally instantiated Team struct
     pub fn add_team_struct(&mut self, name: String, team: Team) {
         self.0.entry(name.clone()).insert_entry(team);
     }
 
+    /// Function to update the data of the designated teams stored within the
+    /// LeagueTable based on simulated match data
+    /// 
+    /// The goal differential is calculated once and passed as is to the home
+    /// team and multiplied by negative 1 to the away team
     pub fn update(&mut self, latest_match: &Match, home_goals: i32, away_goals: i32) {
         let goal_diff = home_goals - away_goals;
         self.0
@@ -118,6 +146,8 @@ impl LeagueTable {
     }
 
     // could we do this more efficiently?
+    /// Returns the rank achieved in a single simulation by the team
+    /// whose name matches the passed &str
     pub fn find_final_rank(&mut self, desired_team: &str) -> i32 {
         let mut i = 1;
         let mut ordered_vector: Vec<&Team> = self.0.values().collect();
@@ -138,9 +168,21 @@ impl LeagueTable {
     }
 }
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Structures for simulation running and data tracking
 
+// Structures for simulation running and data tracking
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Simulates outcomes in all matches in the list of matches remaining in the season and 
+/// returns the rank achieved by the target team
+/// 
+/// The weights used in the distribution model for the Monte Carlo simulation 
+/// were calculated based on data from the following source:
+///    <https://fivethirtyeight.com/features/in-126-years-english-football-has-seen-13475-nil-nil-draws/>
+/// itself based on data collected by James Curley: <https://github.com/jalapic/engsoccerdata>
+/// 
+/// This simulation is based on overall historical data on the average number of 
+/// goals scored by home or away teams in the top four tiers of English Football League play.
+/// It does not take into account recent form or historical results between specific teams.
 pub fn run_simulation(
     target_team: &str,
     current_table: &LeagueTable,
@@ -161,8 +203,13 @@ pub fn run_simulation(
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// read in data from files
+// Reading in data from files
 
+/// Function to read in a list of the remaining fixtures in the Premier League season
+/// from a json file and store the result in a vector
+/// 
+/// Json should take form of an array of objects, each containing two string literals
+/// labeled "home" and "away" as appropriate
 pub fn read_fixtures(fixture_list: &mut Vec<Match>) {
     let root_dir =
         current_dir().expect("should only be run in valid directory with appropriate permissions");
@@ -191,6 +238,11 @@ pub fn read_fixtures(fixture_list: &mut Vec<Match>) {
     }
 }
 
+/// Function to read in the current standings in the Premier League from
+/// a json file and store in a LeagueTable struct
+/// 
+/// Json file should take the form of an array of objects, each of which
+/// must take the form of a Team struct in order to be read
 pub fn read_standings(current_table: &mut LeagueTable) {
     let root_dir =
         current_dir().expect("should only be run in valid directory with appropriate permissions");
